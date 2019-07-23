@@ -1,0 +1,81 @@
+class プラント
+  instance variables
+    private 警報集合 : set of 警報;
+    private 勤務予定 : map シフト単位 to set of 専門家;
+    inv 
+      forall シフト単位 in set dom 勤務予定 & 勤務予定(シフト単位) <> {}; -- すべての勤務予定にシフト単位が登録されている
+    inv 
+      forall 警報 in set 警報集合 &
+        forall シフト単位 in set dom 勤務予定 &
+          exists 専門家 in set 勤務予定(シフト単位) &
+            警報.Get必要資格() in set 専門家.Get保有資格一覧();
+  
+  types
+    public シフト単位 = token;
+  
+  operations
+    public 
+      呼び出される専門家: 警報 * シフト単位 ==> 専門家
+        呼び出される専門家(a警報, aシフト単位) ==
+          let 専門家 in set 勤務予定(aシフト単位) be st
+            a警報.Get必要資格() in set 専門家.Get保有資格()
+            in return 専門家  
+        pre
+         a警報 in set 警報集合 and aシフト単位 in set dom 勤務予定
+        post
+          let 専門家 = RESULT
+            in 専門家 in set 勤務予定(aシフト単位) 
+            and a警報.Get必要資格() in set 専門家.Get保有資格一覧();
+      
+    public
+      ある専門家が勤務するシフト単位集合: 専門家 ==> set of シフト単位
+        ある専門家が勤務するシフト単位集合(ex) == return { p | p in set dom 勤務予定 & ex in set 勤務予定(p) };
+    
+    public 専門家数: シフト単位 ==> nat
+    	専門家数(p) == return card(勤務予定(p))
+    	  pre 
+    	    p in set dom(勤務予定);
+  
+    public プラント: set of 警報 * map シフト単位 to set of 専門家 ==> プラント
+      プラント(a警報集合, a勤務予定) == 
+        ( 警報集合 := a警報集合;
+          勤務予定 := a勤務予定
+        )
+      pre
+        プラントinv(a警報集合, a勤務予定);
+  functions
+    プラントinv: set of 警報 * map シフト単位 to set of 専門家 -> bool
+      プラントinv(as, sch) == 
+        (forall シフト単位 in set dom sch & sch(シフト単位) <> {}) and -- 引数の勤務予定に漏れが無いか
+        (forall 警報 in set as &
+        	forall シフト単位 in set dom sch &
+        	  exists 専門家 in  set sch(シフト単位) &
+        	    警報.Get必要資格() in set 専門家.Get資格一覧()); -- すべてのシフト単位ですべての警報に対応できるか
+end プラント
+
+
+class 専門家
+  instance variables 
+    private 保有資格: set of 資格;
+  types
+    public 資格 = <機会> | <科学> | <生物> | <電気>;
+  operations
+    public 専門家 : set of 資格 ==> 専門家
+      専門家(a資格集合) == 保有資格 := a資格集合;
+end 専門家
+
+class 警報
+  types
+    public String = seq of char;
+  instance variables
+    説明文言: String;
+    必要資格 : 専門家`資格
+  operations
+    public 警報 : 専門家`資格 * String ==> 警報
+      警報(a資格, aString) == 
+        (
+          説明文言 := aString;
+          必要資格 := a資格
+        );
+end 警報
+
