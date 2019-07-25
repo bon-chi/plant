@@ -2,14 +2,8 @@ class プラント
   instance variables
     private 警報集合 : set of 警報;
     private 勤務予定 : map シフト単位 to set of 専門家;
-    inv 
-      forall シフト単位 in set dom 勤務予定 & 勤務予定(シフト単位) <> {}; -- すべての勤務予定にシフト単位が登録されている
-    inv 
-      forall 警報 in set 警報集合 &
-        forall シフト単位 in set dom 勤務予定 &
-          exists 専門家 in set 勤務予定(シフト単位) &
-            警報.Get必要資格() in set 専門家.Get保有資格一覧();
-  
+    inv プラントinv(警報集合, 勤務予定);
+      
   types
     public シフト単位 = token;
   
@@ -18,14 +12,14 @@ class プラント
       呼び出される専門家: 警報 * シフト単位 ==> 専門家
         呼び出される専門家(a警報, aシフト単位) ==
           let 専門家 in set 勤務予定(aシフト単位) be st
-            a警報.Get必要資格() in set 専門家.Get保有資格()
+            a警報.Get必要資格() in set 専門家.Get資格一覧()
             in return 専門家  
         pre
          a警報 in set 警報集合 and aシフト単位 in set dom 勤務予定
         post
           let 専門家 = RESULT
             in 専門家 in set 勤務予定(aシフト単位) 
-            and a警報.Get必要資格() in set 専門家.Get保有資格一覧();
+            and a警報.Get必要資格() in set 専門家.Get資格一覧();
       
     public
       ある専門家が勤務するシフト単位集合: 専門家 ==> set of シフト単位
@@ -45,7 +39,7 @@ class プラント
         プラントinv(a警報集合, a勤務予定);
   functions
     プラントinv: set of 警報 * map シフト単位 to set of 専門家 -> bool
-      プラントinv(as, sch) == 
+    プラントinv(as, sch) == 
         (forall シフト単位 in set dom sch & sch(シフト単位) <> {}) and -- 引数の勤務予定に漏れが無いか
         (forall 警報 in set as &
         	forall シフト単位 in set dom sch &
@@ -62,6 +56,8 @@ class 専門家
   operations
     public 専門家 : set of 資格 ==> 専門家
       専門家(a資格集合) == 保有資格 := a資格集合;
+    pure public Get資格一覧 : () ==> set of 資格
+      Get資格一覧() == return 保有資格; 
 end 専門家
 
 class 警報
@@ -77,5 +73,8 @@ class 警報
           説明文言 := aString;
           必要資格 := a資格
         );
+  
+    pure public Get必要資格: () ==> 専門家`資格
+           Get必要資格() == return 必要資格;         
 end 警報
 
